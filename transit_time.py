@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-CSV_FILE = "../data/dscsa_transactions_2024_2025.csv"
+CSV_FILE = "dscsa_transactions_2024_2025.csv" 
 
 df = pd.read_csv(CSV_FILE)
 df['timestamp_dt'] = pd.to_datetime(df['timestamp'])
@@ -118,12 +118,12 @@ ax2.set_ylabel('Transit Time Variability (hours)')
 
 plt.title("Top 10 Most Frequent Routes: Average Transit Time & Variability")
 plt.tight_layout()
-plt.savefig("../outputs/top10_transit_time_avg_variability.png", dpi=200)
+plt.savefig("top10_transit_time_avg_variability.png", dpi=200)
 plt.show()
 
 
-transit_df.to_csv("../outputs/per_unit_transit_times_filtered.csv", index=False)
-avg_transit.to_csv("../outputs/avg_transit_time_filtered_routes.csv")
+transit_df.to_csv("per_unit_transit_times_filtered.csv", index=False)
+avg_transit.to_csv("avg_transit_time_filtered_routes.csv")
 print("\nSaved:")
 print(" per_unit_transit_times_filtered.csv")
 print(" avg_transit_time_filtered_routes.csv")

@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn.linear_model import LinearRegression
 
-CSV_FILE = "../data/dscsa_transactions_2024_2025.csv"
+CSV_FILE = "dscsa_transactions_2024_2025.csv"
 
 # Load dataset
 df = pd.read_csv(CSV_FILE)
@@ -110,8 +110,8 @@ else:
     predicted = model.predict(np.array([[1]]))
     print(f"\nPredicted transit time from {FROM_LOC} to {TO_LOC} in January 2025: {predicted[0]:.2f} hours")
 
-transit_df.to_csv("../outputs/per_unit_transit_times_filtered.csv", index=False)
-avg_transit.to_csv("../outputs/avg_transit_time_filtered_routes.csv", index=False)
+transit_df.to_csv("per_unit_transit_times_filtered.csv", index=False)
+avg_transit.to_csv("avg_transit_time_filtered_routes.csv", index=False)
 
 print("\nSaved:")
 print(" per_unit_transit_times_filtered.csv")

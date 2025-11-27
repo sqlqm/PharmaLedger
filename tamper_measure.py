@@ -26,7 +26,7 @@ def validate_chain(chain):
 
 # simulation
 def run_experiments(runs=10):
-    ORIGINAL = "../outputs/json1.json"
+    ORIGINAL = "json1.json"
 
     # Load original chain
     with open(ORIGINAL, "r") as f:
@@ -72,7 +72,7 @@ def run_experiments(runs=10):
         print(f"Detection rate: {detection_rate:.2f}%")
 
         # Save tampered chain JSON
-        out_name = f"../outputs/tampered_run{run}.json"
+        out_name = f"tampered_run{run}.json"
         with open(out_name, "w") as f_out:
             json.dump(tampered_chain, f_out, indent=2)
         print(f"Saved: {out_name}")
@@ -94,7 +94,7 @@ def run_experiments(runs=10):
     plt.title("Detection Rate vs Tamper Rate (10 Random Experiments)")
     plt.grid(True)
     plt.tight_layout()
-    plt.savefig("../outputs/detection_rate_chart.png", dpi=200)
+    plt.savefig("detection_rate_chart.png", dpi=200)
     plt.show()
     print("Saved: detection_rate_chart.png")
 

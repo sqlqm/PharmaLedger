@@ -8,7 +8,7 @@ import pandas as pd
 from chain import Chain
 
 
-def load_units_csv(path: str = "../data/dscsa_transactions_2024_2025.csv") -> pd.DataFrame:
+def load_units_csv(path: str = "dscsa_transactions_2024_2025.csv") -> pd.DataFrame:
     """Load the units CSV and perform light validation.
 
     - Ensures the file exists.
@@ -38,7 +38,7 @@ def load_units_csv(path: str = "../data/dscsa_transactions_2024_2025.csv") -> pd
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Load and inspect units CSV file")
-    parser.add_argument("--path", "-p", default="../data/dscsa_transactions_2024_2025.csv", help="Path to units CSV file")
+    parser.add_argument("--path", "-p", default="dscsa_transactions_2024_2025.csv", help="Path to units CSV file")
     parser.add_argument("--build-chain", action="store_true", help="Build a Chain from the CSV rows")
     parser.add_argument("--chain-output", default=None, help="If set, write the built chain to this JSON file")
     args = parser.parse_args(argv)
