@@ -1,51 +1,47 @@
-"""Simple blockchain Chain and Block classes for the supply-chain project.
-
-This module provides a minimal Block dataclass and a Chain class that
-represents a sequence of blocks.
-
-Key features:
-- Block: stores index, timestamp, data, previous_hash, nonce and hash
-- Chain: manages blocks, creates a genesis block, appends blocks, and
-  validates the chain integrity.
-
-
-"""
-from __future__ import annotations
-
 import hashlib
 import json
 import time
-from dataclasses import dataclass, field
-from typing import Any, Dict, List
 
 
-@dataclass
 class Block:
-    # A minimal block container.
 
-    # Attributes:
-    #     index: position in the chain (0 for genesis)
-    #     timestamp: unix timestamp when block was created
-    #     data: arbitrary payload (e.g., a dict describing a shipment)
-    #     previous_hash: hex string of previous block's hash
-    #     nonce: integer reserved for proofs (default 0)
-    #     hash: computed SHA-256 hash of the block contents (set on init)
-    index: int
-    timestamp: float
-    data: Any
-    previous_hash: str
-    nonce: int = 0
-    hash: str = field(init=False)
+    def __init__(self, index, data, previous_hash, nonce=0, timestamp=None):
+        # Set the basic properties
+        self.index = index
+        self.data = data
+        self.previous_hash = previous_hash
+        self.nonce = nonce
 
-    def __post_init__(self) -> None:
-        # compute the block hash right after initialization
+        # If no timestamp is given, use the current time
+        if timestamp is None:
+            self.timestamp = time.time()
+        else:
+            self.timestamp = timestamp
+
+        # Compute and store this block's hash
         self.hash = self.compute_hash()
 
-    def to_dict(self) -> Dict[str, Any]:
-        """Return a dict representation of the block (useful for JSON).
+    def compute_hash(self):
 
-        Note: `hash` is included to make serialization round-trip-friendly.
-        """
+        # Put the important fields into a dictionary
+        block_content = {
+            "index": self.index,
+            "timestamp": self.timestamp,
+            "data": self.data,
+            "previous_hash": self.previous_hash,
+            "nonce": self.nonce,
+        }
+
+        # Turn the dictionary into a JSON string
+        # sort_keys=True makes the JSON ordering consistent
+        block_string = json.dumps(block_content, sort_keys=True, ensure_ascii=False)
+
+        # Encode to bytes and run SHA-256
+        hash_object = hashlib.sha256(block_string.encode("utf-8"))
+        return hash_object.hexdigest()
+
+    def to_dict(self):
+        
         return {
             "index": self.index,
             "timestamp": self.timestamp,
@@ -55,91 +51,65 @@ class Block:
             "hash": self.hash,
         }
 
-    def compute_hash(self) -> str:
-        # Compute SHA-256 hash of the block contents (deterministic).
-
-        # We convert the important fields to JSON with sorted keys to ensure
-        # the same input always produces the same hash.
-        block_content = {
-            "index": self.index,
-            "timestamp": self.timestamp,
-            "data": self.data,
-            "previous_hash": self.previous_hash,
-            "nonce": self.nonce,
-        }
-        block_string = json.dumps(block_content, sort_keys=True, ensure_ascii=False)
-        return hashlib.sha256(block_string.encode("utf-8")).hexdigest()
-    
-        #The block string converts the block_content into a text string in JSON format. 
-        #We then encode this string to a UTF-8 byte representation before passing it to the SHA-256 hashing function.
-        #This ensures that the hash is computed based on the exact byte sequence of the block's content.
-
 
 class Chain:
-    # Represents a simple blockchain (a sequence of linked blocks).
 
-    # Usage:
-    #     chain = Chain()
-    #     chain.add_block({"gtin": "...", "serial": "..."})
-    #     assert chain.is_valid()
-    # Genesis block is created automatically on initialization.
-    # Initializes the Chain with a genesis block.
-    # So we know the chain always has at least one block.
-    # See https://en.wikipedia.org/wiki/Blockchain
+    def __init__(self, genesis_data="Genesis Block"):
+        # The chain is just a Python list of Block objects
+        self.chain = []
 
-    def __init__(self, genesis_data: Any = "Genesis Block") -> None:
-        self.chain: List[Block] = []
+        # When we create a new Chain, we immediately create
+        # the first block (the "genesis" block)
         self.create_genesis_block(genesis_data)
 
-    def create_genesis_block(self, data: Any) -> Block:
-        # Create and append the genesis (first) block.
-        # The genesis block has index 0 and a previous_hash of '0'.
+    def create_genesis_block(self, data):
+        genesis_block = Block(
+            index=0,
+            data=data,
+            previous_hash="0"
+        )
+        self.chain.append(genesis_block)
+        return genesis_block
 
-        genesis = Block(index=0, timestamp=time.time(), data=data, previous_hash="0")
-        self.chain.append(genesis)
-        return genesis
+    def add_block(self, data):
+        last_block = self.chain[-1]          # the most recent block
+        new_index = last_block.index + 1     # next index
 
-    def add_block(self, data: Any) -> Block:
-        """Create a new Block with `data`, append it to the chain, and return it."""
-        last = self.chain[-1]
-        new_block = Block(index=last.index + 1, timestamp=time.time(), data=data, previous_hash=last.hash)
+        new_block = Block(
+            index=new_index,
+            data=data,
+            previous_hash=last_block.hash
+        )
+
         self.chain.append(new_block)
         return new_block
 
-    def __len__(self) -> int:
-        return len(self.chain)
-
-    def last_block(self) -> Block:
+    def last_block(self):
         return self.chain[-1]
 
-    def is_valid(self) -> bool:
-        # Validate the integrity of the chain.
+    def __len__(self):
+        return len(self.chain)
 
-        # Checks performed:
-        # - Each block's stored `previous_hash` matches the previous block's computed `hash`.
-        # - Each block's stored `hash` equals a freshly computed hash of its contents.
-
-        # Returns True if the chain is valid, False otherwise.
-        if not self.chain:
+    def is_valid(self):
+        # Chains with 0 or 1 block are automatically valid
+        if len(self.chain) <= 1:
             return True
 
+        # Start from block 1 (the second block) and compare with previous
         for i in range(1, len(self.chain)):
             current = self.chain[i]
             previous = self.chain[i - 1]
 
-            # check previous link
+            # Check that the link is correct
             if current.previous_hash != previous.hash:
                 return False
 
-            # check block's hash integrity (detects tampering with data)
+            # Recompute the hash and compare
             if current.hash != current.compute_hash():
                 return False
 
+        # If all checks passed, the chain is valid
         return True
 
-    def to_list(self) -> List[Dict[str, Any]]:
-        """Return the chain as a list of dictionaries (serializable)."""
-        return [b.to_dict() for b in self.chain]
-
-
-__all__ = ["Block", "Chain"]
+    def to_list(self):
+        return [block.to_dict() for block in self.chain]
