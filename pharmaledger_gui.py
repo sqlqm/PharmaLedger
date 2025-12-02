@@ -1,3 +1,8 @@
+"""
+PharmaLedger - Interactive GUI Dashboard with Live Visualizations
+Modern interface with loading animations and real-time data displays
+"""
+
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import threading
@@ -12,22 +17,56 @@ from datetime import datetime
 class PharmaLedgerGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("PharmaLedger - A Blockchain-Based Medicine Tracking Dashboard")
+        self.root.title("PharmaLedger - Blockchain Supply Chain Dashboard")
         self.root.geometry("1400x900")
         
-        # Modern color scheme
-        self.colors = {
-            'primary': '#2563eb',      # Blue
-            'secondary': '#7c3aed',    # Purple
-            'success': '#10b981',      # Green
-            'danger': '#ef4444',       # Red
-            'warning': '#f59e0b',      # Orange
-            'info': '#06b6d4',         # Cyan
-            'bg_dark': '#1f2937',      # Dark gray
-            'bg_light': '#f3f4f6',     # Light gray
-            'text_dark': '#111827',    # Almost black
-            'text_light': '#6b7280',   # Gray
+        # Theme system
+        self.current_theme = "light"  # Start with light mode by default
+        self.themes = {
+            "light": {
+                # Light mode - Clean and professional
+                'primary': '#4f46e5',      # Indigo
+                'secondary': '#8b5cf6',    # Purple
+                'success': '#059669',      # Emerald green
+                'danger': '#dc2626',       # Red
+                'warning': '#d97706',      # Amber
+                'info': '#0891b2',         # Cyan
+                'bg': '#f8fafc',           # Off-white background
+                'bg_dark': '#1e293b',      # Dark sections
+                'bg_light': '#f1f5f9',     # Light gray
+                'text_dark': '#0f172a',    # Almost black
+                'text_light': '#64748b',   # Slate gray
+                'border': '#e2e8f0',       # Light border
+                'terminal_bg': '#1e1e1e',  # Keep terminal dark
+                'terminal_fg': '#d4d4d4',  # Terminal text
+                'card_bg': '#ffffff',      # Pure white cards
+                'header_bg': '#6366f1',    # Indigo header
+                'header_text': '#ffffff',  # White text on header
+            },
+            "dark": {
+                # Dark mode - Match terminal background
+                'primary': '#60a5fa',      # Sky blue (softer)
+                'secondary': '#a78bfa',    # Light purple (for stats)
+                'success': '#34d399',      # Emerald
+                'danger': '#f87171',       # Light red
+                'warning': '#fbbf24',      # Amber
+                'info': '#22d3ee',         # Cyan
+                'bg': '#1a1a1a',           # Very dark background
+                'bg_dark': '#0a0a0a',      # Even darker
+                'bg_light': '#2d2d2d',     # Lighter dark
+                'text_dark': '#e5e5e5',    # Light text (for dark bg)
+                'text_light': '#a0a0a0',   # Gray text (for dark bg)
+                'border': '#404040',       # Dark border
+                'terminal_bg': '#0a0a0a',  # Very dark terminal
+                'terminal_fg': '#e2e8f0',  # Light terminal text
+                'card_bg': '#262626',      # Dark cards (darker than bg)
+                'header_bg': '#3b82f6',    # Blue header
+                'header_text': '#ffffff',  # White text on header
+            }
         }
+        
+        self.colors = self.themes[self.current_theme]
+        self.root.config(bg=self.colors['bg'])
         
         # Animation state
         self.is_loading = False
@@ -41,6 +80,24 @@ class PharmaLedgerGUI:
         self.create_widgets()
         self.check_files()
         
+    def toggle_theme(self):
+        """Toggle between light and dark mode"""
+        # Switch theme
+        self.current_theme = "dark" if self.current_theme == "light" else "light"
+        self.colors = self.themes[self.current_theme]
+        
+        # Recreate widgets with new theme
+        self.refresh_ui()
+    
+    def refresh_ui(self):
+        """Refresh all UI elements with current theme"""
+        # Clear and recreate widgets
+        for widget in self.root.winfo_children():
+            widget.destroy()
+        
+        self.create_widgets()
+        self.check_files()
+    
     def setup_styles(self):
         """Configure modern ttk styles"""
         style = ttk.Style()
@@ -68,12 +125,31 @@ class PharmaLedgerGUI:
                        borderwidth=0,
                        padding=10)
         
-        # Progress bar style
+        # Progress bar style - force light trough color
+        if self.current_theme == 'light':
+            trough_color = '#e5e7eb'  # Light gray for light mode
+        else:
+            trough_color = '#1a1a1a'  # Match main background in dark mode
+            
         style.configure('Custom.Horizontal.TProgressbar',
                        background=self.colors['primary'],
-                       troughcolor=self.colors['bg_light'],
+                       troughcolor=trough_color,
                        borderwidth=0,
+                       relief='flat',
                        thickness=20)
+        
+        # Force the trough relief to flat
+        style.layout('Custom.Horizontal.TProgressbar',
+                    [('Horizontal.Progressbar.trough',
+                      {'children': [('Horizontal.Progressbar.pbar',
+                                    {'side': 'left', 'sticky': 'ns'})],
+                       'sticky': 'nswe'})])
+        
+        style.configure('Custom.Horizontal.TProgressbar',
+                       troughcolor=trough_color,
+                       background=self.colors['primary'],
+                       troughrelief='flat',
+                       borderwidth=0)
         
     def create_widgets(self):
         """Create the main GUI layout"""
@@ -81,65 +157,87 @@ class PharmaLedgerGUI:
         self.root.configure(bg=self.colors['bg_light'])
         
         # Header
-        header = tk.Frame(self.root, bg=self.colors['primary'], height=100)
+        header = tk.Frame(self.root, bg=self.colors['header_bg'], height=100)
         header.pack(fill='x')
         
-        title_label = tk.Label(header,
+        # Header content frame
+        header_content = tk.Frame(header, bg=self.colors['header_bg'])
+        header_content.pack(fill='both', expand=True, padx=20)
+        
+        # Theme toggle button (top right)
+        theme_icon = "☀️" if self.current_theme == "dark" else "🌙"
+        theme_text = "Light Mode" if self.current_theme == "dark" else "Dark Mode"
+        self.theme_btn = tk.Button(header_content,
+                                   text=f"{theme_icon} {theme_text}",
+                                   command=self.toggle_theme,
+                                   bg=self.colors['card_bg'],
+                                   fg=self.colors['text_dark'],
+                                   font=('Segoe UI', 9, 'bold'),
+                                   relief='flat',
+                                   cursor='hand2',
+                                   width=16,  # Fixed width
+                                   height=2,  # Fixed height
+                                   borderwidth=0)
+        self.theme_btn.place(relx=1.0, rely=0.5, anchor='e')
+        
+        title_label = tk.Label(header_content,
                               text="💊 PharmaLedger",
                               font=('Segoe UI', 28, 'bold'),
-                              bg=self.colors['primary'],
-                              fg='white')
-        title_label.pack(pady=15)
+                              bg=self.colors['header_bg'],
+                              fg=self.colors['header_text'])
+        title_label.pack(pady=(15, 0))
         
-        subtitle_label = tk.Label(header,
+        # Subtitle with better contrast
+        subtitle_color = '#e0e7ff' if self.current_theme == 'light' else '#dbeafe'
+        subtitle_label = tk.Label(header_content,
                                  text="Blockchain-Powered Pharmaceutical Supply Chain Management",
                                  font=('Segoe UI', 12),
-                                 bg=self.colors['primary'],
-                                 fg='#e0e7ff')
-        subtitle_label.pack()
+                                 bg=self.colors['header_bg'],
+                                 fg=subtitle_color)
+        subtitle_label.pack(pady=(0, 15))
         
         # Main container
-        container = tk.Frame(self.root, bg=self.colors['bg_light'])
+        container = tk.Frame(self.root, bg=self.colors['bg'])
         container.pack(fill='both', expand=True, padx=20, pady=20)
         
         # Top row - Stats cards
-        stats_row = tk.Frame(container, bg=self.colors['bg_light'])
+        stats_row = tk.Frame(container, bg=self.colors['bg'])
         stats_row.pack(fill='x', pady=(0, 15))
         
         self.create_stats_cards(stats_row)
         
         # Middle row - Main content
-        middle_row = tk.Frame(container, bg=self.colors['bg_light'])
+        middle_row = tk.Frame(container, bg=self.colors['bg'])
         middle_row.pack(fill='both', expand=True)
         
         # Left panel - Actions
-        left_panel = tk.Frame(middle_row, bg=self.colors['bg_light'])
+        left_panel = tk.Frame(middle_row, bg=self.colors['bg'])
         left_panel.pack(side='left', fill='both', expand=True, padx=(0, 10))
         
         self.create_blockchain_card(left_panel)
         self.create_analysis_card(left_panel)
         
         # Middle panel - Visualization
-        middle_panel = tk.Frame(middle_row, bg=self.colors['bg_light'])
+        middle_panel = tk.Frame(middle_row, bg=self.colors['bg'])
         middle_panel.pack(side='left', fill='both', expand=True, padx=5)
         
         self.create_visualization_card(middle_panel)
         
         # Right panel - Status and Output
-        right_panel = tk.Frame(middle_row, bg=self.colors['bg_light'])
+        right_panel = tk.Frame(middle_row, bg=self.colors['bg'])
         right_panel.pack(side='right', fill='both', expand=True, padx=(10, 0))
         
         self.create_status_card(right_panel)
         self.create_output_card(right_panel)
         
         # Footer
-        footer = tk.Frame(self.root, bg='white', height=50)
+        footer = tk.Frame(self.root, bg=self.colors['card_bg'], height=50)
         footer.pack(fill='x', side='bottom')
         
         footer_label = tk.Label(footer,
                                text=f"© 2024 PharmaLedger Team | CSE 532 Project | {datetime.now().strftime('%I:%M %p')}",
                                font=('Segoe UI', 9),
-                               bg='white',
+                               bg=self.colors['card_bg'],
                                fg=self.colors['text_light'])
         footer_label.pack(pady=15)
         
@@ -155,11 +253,11 @@ class PharmaLedgerGUI:
         ]
         
         for title, value, color in stats:
-            card = tk.Frame(parent, bg='white', relief='flat', width=200)
+            card = tk.Frame(parent, bg=self.colors['card_bg'], relief='flat', width=200)
             card.pack(side='left', fill='both', expand=True, padx=5)
             
             # Shadow effect
-            shadow = tk.Frame(parent, bg='#d1d5db', relief='flat')
+            shadow = tk.Frame(parent, bg=self.colors['border'], relief='flat')
             shadow.place(in_=card, x=2, y=2, relwidth=1, relheight=1)
             card.lift()
             
@@ -167,13 +265,13 @@ class PharmaLedgerGUI:
             tk.Label(card,
                     text=title,
                     font=('Segoe UI', 10),
-                    bg='white',
+                    bg=self.colors['card_bg'],
                     fg=self.colors['text_light']).pack(pady=(15, 5))
             
             value_label = tk.Label(card,
                                   text=value,
                                   font=('Segoe UI', 24, 'bold'),
-                                  bg='white',
+                                  bg=self.colors['card_bg'],
                                   fg=color)
             value_label.pack(pady=(0, 15))
             
@@ -185,7 +283,7 @@ class PharmaLedgerGUI:
         
         # Canvas for visualization
         self.viz_canvas = tk.Canvas(content,
-                                    bg='#f9fafb',
+                                    bg=self.colors['card_bg'],
                                     highlightthickness=0,
                                     height=400)
         self.viz_canvas.pack(fill='both', expand=True, pady=10)
@@ -194,21 +292,25 @@ class PharmaLedgerGUI:
         self.progress_label = tk.Label(content,
                                       text="",
                                       font=('Segoe UI', 10),
-                                      bg='white',
+                                      bg=self.colors['card_bg'],
                                       fg=self.colors['text_light'])
         self.progress_label.pack(pady=(10, 5))
         
-        self.progress_bar = ttk.Progressbar(content,
+        # Frame for progress bar with correct background
+        progress_frame = tk.Frame(content, bg=self.colors['card_bg'])
+        progress_frame.pack(pady=(0, 10))
+        
+        self.progress_bar = ttk.Progressbar(progress_frame,
                                            style='Custom.Horizontal.TProgressbar',
                                            mode='determinate',
                                            length=400)
-        self.progress_bar.pack(pady=(0, 10))
+        self.progress_bar.pack()
         
         # Status message
         self.viz_status = tk.Label(content,
                                   text="Ready to analyze data",
                                   font=('Segoe UI', 11),
-                                  bg='white',
+                                  bg=self.colors['card_bg'],
                                   fg=self.colors['text_dark'])
         self.viz_status.pack(pady=10)
         
@@ -445,27 +547,27 @@ class PharmaLedgerGUI:
         
     def create_card(self, parent, title):
         """Create a styled card container"""
-        card = tk.Frame(parent, bg='white', relief='flat', borderwidth=1)
+        card = tk.Frame(parent, bg=self.colors['card_bg'], relief='flat', borderwidth=1)
         card.pack(fill='both', expand=True, pady=(0, 15))
         
         # Add shadow effect
-        shadow = tk.Frame(parent, bg='#d1d5db', relief='flat')
+        shadow = tk.Frame(parent, bg=self.colors['border'], relief='flat')
         shadow.place(in_=card, x=3, y=3, relwidth=1, relheight=1)
         card.lift()
         
         # Card header
-        header = tk.Frame(card, bg='white')
+        header = tk.Frame(card, bg=self.colors['card_bg'])
         header.pack(fill='x', padx=20, pady=(15, 10))
         
         title_label = tk.Label(header,
                               text=title,
                               font=('Segoe UI', 14, 'bold'),
-                              bg='white',
+                              bg=self.colors['card_bg'],
                               fg=self.colors['text_dark'])
         title_label.pack(anchor='w')
         
         # Card content
-        content = tk.Frame(card, bg='white')
+        content = tk.Frame(card, bg=self.colors['card_bg'])
         content.pack(fill='both', expand=True, padx=20, pady=(0, 15))
         
         return content
@@ -572,25 +674,34 @@ class PharmaLedgerGUI:
             ('Predictions', 'predict_transit_time.py'),
         ]
         
+        # Light mode: white background with dark text
+        # Dark mode: dark background with light text
+        if self.current_theme == 'light':
+            status_bg = '#ffffff'    # White
+            status_text = '#0f172a'  # Dark text
+        else:
+            status_bg = '#1a1a1a'    # Dark
+            status_text = '#e5e5e5'  # Light text
+        
         for name, filename in files_to_check:
-            frame = tk.Frame(content, bg='white')
-            frame.pack(fill='x', pady=4)
+            frame = tk.Frame(content, bg=status_bg, relief='flat', bd=0)
+            frame.pack(fill='x', pady=3, padx=0)
             
             label = tk.Label(frame,
                            text=name,
                            font=('Segoe UI', 9),
-                           bg='white',
-                           fg=self.colors['text_dark'],
+                           bg=status_bg,
+                           fg=status_text,
                            width=18,
                            anchor='w')
-            label.pack(side='left')
+            label.pack(side='left', padx=10)
             
             status = tk.Label(frame,
                             text="⏳",
                             font=('Segoe UI', 9),
-                            bg='white',
-                            fg=self.colors['text_light'])
-            status.pack(side='right')
+                            bg=status_bg,
+                            fg=status_text)
+            status.pack(side='right', padx=10)
             
             self.status_labels[filename] = status
             
@@ -599,7 +710,7 @@ class PharmaLedgerGUI:
         content = self.create_card(parent, "📝 Output Log")
         
         # Output text area with scrollbar
-        scroll_frame = tk.Frame(content, bg='white')
+        scroll_frame = tk.Frame(content, bg=self.colors['card_bg'])
         scroll_frame.pack(fill='both', expand=True)
         
         scrollbar = tk.Scrollbar(scroll_frame)
@@ -642,7 +753,7 @@ class PharmaLedgerGUI:
         self.output_text.insert('end', '$ Ready to process operations...\n\n', 'info')
         
         # Button frame
-        btn_frame = tk.Frame(content, bg='white')
+        btn_frame = tk.Frame(content, bg=self.colors['card_bg'])
         btn_frame.pack(pady=(10, 0))
         
         # Clear button
@@ -651,20 +762,20 @@ class PharmaLedgerGUI:
                              command=self.clear_output,
                              bg=self.colors['bg_light'],
                              fg=self.colors['text_dark'],
-                             font=('Segoe UI', 8),
+                             font=('Segoe UI', 8, 'bold'),
                              relief='flat',
                              cursor='hand2',
                              padx=12,
                              pady=6)
         btn_clear.pack(side='left', padx=3)
         
-        # View Results button
+        # View Results button  
         btn_results = tk.Button(btn_frame,
                                text="📂 View Files",
                                command=self.view_results,
                                bg=self.colors['primary'],
                                fg='white',
-                               font=('Segoe UI', 8),
+                               font=('Segoe UI', 8, 'bold'),
                                relief='flat',
                                cursor='hand2',
                                padx=12,
@@ -874,7 +985,7 @@ class PharmaLedgerGUI:
             
         result = messagebox.askyesno(
             "Build Blockchain",
-            "This will build a blockchain.\n"
+            "This will build a blockchain with 142,269 blocks.\n"
             "Estimated time: 30-60 seconds.\n\n"
             "Continue?"
         )
