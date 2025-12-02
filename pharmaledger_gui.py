@@ -235,7 +235,7 @@ class PharmaLedgerGUI:
         footer.pack(fill='x', side='bottom')
         
         footer_label = tk.Label(footer,
-                               text=f"© 2024 PharmaLedger Team | CSE 532 Project | {datetime.now().strftime('%I:%M %p')}",
+                               text=f"© 2025 PharmaLedger Team | CSE 532 Project | {datetime.now().strftime('%I:%M %p')}",
                                font=('Segoe UI', 9),
                                bg=self.colors['card_bg'],
                                fg=self.colors['text_light'])
